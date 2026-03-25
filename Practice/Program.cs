@@ -24,11 +24,13 @@ builder.Services.AddHostedService<EmailBackgroundService>();
 builder.Services.AddMemoryCache();
 
 
-builder.Services.AddControllers()
-    .AddFluentValidation();
+builder.Services.AddControllers();
+
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddFluentValidationClientsideAdapters();
+
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
