@@ -1,3 +1,5 @@
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Practice.Data;
 using Practice.Repositories;
@@ -18,7 +20,13 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSingleton<IEmailQueue, EmailQueue>();
 builder.Services.AddHostedService<EmailBackgroundService>();
 
+//cache
+builder.Services.AddMemoryCache();
 
+
+builder.Services.AddControllers()
+    .AddFluentValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

@@ -28,7 +28,7 @@ namespace Practice.Repositories
             var totalCount = await users.CountAsync();
 
             // Pagination
-            var data = await users
+            var data = await users.OrderBy(x => x.Id)
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize)
                 .ToListAsync();
