@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Practice.Data;
 using Practice.Repositories;
 using Practice.Services;
+using Practice.Services.Background;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,12 +15,19 @@ builder.Services.AddScoped<IUserRepository , UserRepository>();
 
 //services
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddSingleton<IEmailQueue, EmailQueue>();
+builder.Services.AddHostedService<EmailBackgroundService>();
+
+
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+//Middleware
+app.UseMiddleware<Practice.Middleware.ExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

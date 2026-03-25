@@ -38,14 +38,10 @@ namespace Practice.Repositories
 
         public async Task<User?> GetUserByIdAsync(int id)
         {
-            var user = await _appDbContext.Users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == id);
-            if (user == null)
-            {
-                throw new Exception("User not found");
-            }
-            return user;
+            return await _appDbContext.Users
+             .AsNoTracking()
+             .FirstOrDefaultAsync(x => x.Id == id);
+
         }
 
         public async Task CreateUserAsync(User user)
