@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Practice.DTO;
 using Practice.Models;
 using Practice.Services;
 
@@ -15,11 +16,19 @@ namespace Practice.Controllers
         }
 
         [HttpGet("Users")]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> GetUsers([FromQuery] UserQuery query)
         {
-            var users = await _userService.GetAllUsersAsync();
-            return Ok(users);
+            var (users, totalCount) = await _userService.GetUsersAsync(query);
+
+            return Ok(new
+            {
+                TotalCount = totalCount,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize,
+                Data = users
+            });
         }
+
         [HttpGet("{Id}")]
         public async Task<IActionResult> GetById(int id)
         {

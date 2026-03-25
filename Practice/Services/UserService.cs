@@ -1,4 +1,5 @@
-﻿using Practice.Models;
+﻿using Practice.DTO;
+using Practice.Models;
 using Practice.Repositories;
 using Practice.Services;
 
@@ -11,9 +12,9 @@ public class UserService : IUserService
         _repo = repo;
     }
 
-    public async Task<List<User>> GetAllUsersAsync()
+    public async Task<(List<User>, int)> GetUsersAsync(UserQuery query)
     {
-        return await _repo.GetAllUserAsync();
+        return await _repo.GetUsersAsync(query);
     }
 
     public async Task<User?> GetUserByIdAsync(int id)

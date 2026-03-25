@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Practice.Data;
+using Practice.DTO;
 using Practice.Models;
 
 namespace Practice.Repositories
@@ -13,11 +14,26 @@ namespace Practice.Repositories
             _appDbContext = appDbContext;
         }
 
-        public async Task<List<User>> GetAllUserAsync()
+        public async Task<(List<User>, int)> GetUsersAsync(UserQuery query)
         {
-            return await _appDbContext.Users
-                .AsNoTracking()
+            var users = _appDbContext.Users.AsQueryable();
+
+            // Search
+            if (!string.IsNullOrEmpty(query.Search))
+            {
+                users = users.Where(x => x.Name.Contains(query.Search));
+            }
+
+            // Total count
+            var totalCount = await users.CountAsync();
+
+            // Pagination
+            var data = await users
+                .Skip((query.PageNumber - 1) * query.PageSize)
+                .Take(query.PageSize)
                 .ToListAsync();
+
+            return (data, totalCount);
         }
 
         public async Task<User?> GetUserByIdAsync(int id)

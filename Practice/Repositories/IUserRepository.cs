@@ -1,10 +1,11 @@
-﻿using Practice.Models;
+﻿using Practice.DTO;
+using Practice.Models;
 
 namespace Practice.Repositories
 {
     public interface IUserRepository
     {
-        Task<List<User>> GetAllUserAsync();
+        Task<(List<User>, int)> GetUsersAsync(UserQuery query);
         Task<User?> GetUserByIdAsync(int id);
         Task CreateUserAsync(User user);
         Task<User> UpdateUserAsync(User user);
