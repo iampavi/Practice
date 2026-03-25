@@ -32,5 +32,22 @@ namespace Practice.Controllers
             await _userService.CreateUserAsync(user);
             return Ok(user);
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUser(int id, User user)
+        {
+            if (id != user.Id)
+                return BadRequest("Id mismatch");
+
+            var updatedUser = await _userService.UpdateUserAsync(user);
+            return Ok(updatedUser);
+        }
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            await _userService.DeleteUser(id);
+            return Ok("User deleted successfully");
+        }
+
     }
 }   

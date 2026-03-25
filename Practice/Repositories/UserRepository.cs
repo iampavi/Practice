@@ -37,5 +37,37 @@ namespace Practice.Repositories
             await _appDbContext.Users.AddAsync(user);
             await _appDbContext.SaveChangesAsync();
         }
-    }
-}
+
+        public async Task<User> UpdateUserAsync(User user)
+        {
+            var existingUser = await _appDbContext.Users
+                .FirstOrDefaultAsync(x => x.Id == user.Id);
+
+            if (existingUser == null)
+            {
+                throw new Exception("User not found");
+            }
+
+            // Update fields
+            existingUser.Name = user.Name;
+            existingUser.Email = user.Email;
+            existingUser.Password = user.Password;
+
+            await _appDbContext.SaveChangesAsync();
+
+            return existingUser;
+        }
+        public async Task DeleteUserAsync(int id)
+        {
+            var user = await _appDbContext.Users
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (user == null)
+            {
+                throw new Exception("User not found");
+            }
+
+            _appDbContext.Users.Remove(user);
+            await _appDbContext.SaveChangesAsync();
+        }
+    } }

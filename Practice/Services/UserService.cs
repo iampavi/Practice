@@ -37,4 +37,19 @@ public class UserService : IUserService
 
         await _repo.CreateUserAsync(user);
     }
+
+    public async Task<User> UpdateUserAsync(User user)
+    {
+        if (user.Id <= 0)
+            throw new Exception("Invalid user id");
+
+        return await _repo.UpdateUserAsync(user);
+    }
+    public async Task DeleteUser(int id)
+    {
+        if (id <= 0)
+            throw new Exception("Invalid user id");
+
+        await _repo.DeleteUserAsync(id);
+    }
 }
