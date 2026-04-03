@@ -5,10 +5,10 @@ namespace Practice.Services
 {
     public interface IUserService
     {
-        Task<(List<User>, int)> GetUsersAsync(UserQuery query);
-        Task<User?> GetUserByIdAsync(int id);
-        Task CreateUserAsync(User user);
-        Task<User> UpdateUserAsync(User user);
+        Task<(List<UserDto>, int)> GetUsersAsync(UserQuery query);
+        Task<UserDto?> GetUserByIdAsync(int id);
+        Task CreateUserAsync(CreateUserDto dto);
+        Task<UserDto> UpdateUserAsync(UpdateUserDto dto);
         Task DeleteUser(int id);
 
     }

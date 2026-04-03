@@ -5,7 +5,8 @@ using Practice.Services;
 
 namespace Practice.Controllers
 {
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
     public class UserController : ControllerBase
     {
@@ -15,7 +16,7 @@ namespace Practice.Controllers
             _userService = userService;
         }
 
-        [HttpGet("Users")]
+        [HttpGet]
         public async Task<IActionResult> GetUsers([FromQuery] UserQuery query)
         {
             var (users, totalCount) = await _userService.GetUsersAsync(query);
@@ -29,26 +30,31 @@ namespace Practice.Controllers
             });
         }
 
-        [HttpGet("{Id}")]
+        [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
             var user = await _userService.GetUserByIdAsync(id);
             return Ok(user);
         }
-        [HttpPost("Create")]
-        public async Task<IActionResult> CreateUser(User user)
+
+        [HttpPost]
+        public async Task<IActionResult> CreateUser(CreateUserDto dto)
         {
-            await _userService.CreateUserAsync(user);
-            return Ok(user);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            await _userService.CreateUserAsync(dto);
+
+            return StatusCode(201);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, User user)
+        public async Task<IActionResult> UpdateUser(int id, [FromBody]UpdateUserDto dto)
         {
-            if (id != user.Id)
+            if (id != dto.Id)
                 return BadRequest("Id mismatch");
 
-            var updatedUser = await _userService.UpdateUserAsync(user);
+            var updatedUser = await _userService.UpdateUserAsync(dto);
             return Ok(updatedUser);
         }
         [HttpDelete("{id}")]

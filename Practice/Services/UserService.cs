@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using AutoMapper;
+using Microsoft.Extensions.Caching.Memory;
 using Practice.DTO;
 using Practice.Models;
 using Practice.Repositories;
@@ -12,19 +13,21 @@ public class UserService : IUserService
     private readonly IEmailQueue _emailQueue;
     private readonly IMemoryCache _cache;
     private static readonly List<string> _cacheKeys = new();
-    public UserService(IUserRepository repo, ILogger<IUserService> logger ,IEmailQueue emailQueue ,IMemoryCache memoryCache)
+    private readonly IMapper _mapper;
+    public UserService(IUserRepository repo, ILogger<IUserService> logger ,IEmailQueue emailQueue ,IMemoryCache memoryCache,IMapper mapper)
     {
         _repo = repo;
         _logger = logger;
         _emailQueue = emailQueue;
         _cache = memoryCache;
+        _mapper = mapper;
     }
 
-    public async Task<(List<User>, int)> GetUsersAsync(UserQuery query)
+    public async Task<(List<UserDto>, int)> GetUsersAsync(UserQuery query)
     {
         var cacheKey = $"users_{query.PageNumber}_{query.PageSize}_{query.Search}";
 
-        if (_cache.TryGetValue(cacheKey, out (List<User>, int) cachedData))
+        if (_cache.TryGetValue(cacheKey, out (List<UserDto>, int) cachedData))
         {
             _logger.LogInformation("Returning data from CACHE");
             return cachedData;
@@ -32,17 +35,21 @@ public class UserService : IUserService
 
         var result = await _repo.GetUsersAsync(query);
 
-        _cache.Set(cacheKey, result, TimeSpan.FromMinutes(5));
+        var usersDto = _mapper.Map<List<UserDto>>(result.Item1);
+
+        var mappedResult = (usersDto, result.Item2);
+
+        _cache.Set(cacheKey, mappedResult, TimeSpan.FromMinutes(5));
 
         // 🔥 Track key
         _cacheKeys.Add(cacheKey);
 
         _logger.LogInformation("Data stored in CACHE");
 
-        return result;
+        return mappedResult;
     }
 
-    public async Task<User?> GetUserByIdAsync(int id)
+    public async Task<UserDto?> GetUserByIdAsync(int id)
     {
         _logger.LogInformation($"Fetching user with id: {id}");
         var user = await _repo.GetUserByIdAsync(id);
@@ -52,11 +59,12 @@ public class UserService : IUserService
             throw new KeyNotFoundException("User not found");
         }
 
-        return user;
+        return _mapper.Map<UserDto>(user);
     }
 
-    public async Task CreateUserAsync(User user)
+    public async Task CreateUserAsync(CreateUserDto dto)
     {
+        var user = _mapper.Map<User>(dto);
 
         await _repo.CreateUserAsync(user);
 
@@ -82,20 +90,21 @@ public class UserService : IUserService
         _logger.LogInformation("All user cache cleared");
     }
 
-    public async Task<User> UpdateUserAsync(User user)
+    public async Task<UserDto> UpdateUserAsync(UpdateUserDto dto)
     {
-        if (user.Id <= 0)
+        if (dto.Id <= 0)
             throw new Exception("Invalid user id");
 
        
-        var existingUser = await _repo.GetUserByIdAsync(user.Id);
+        var existingUser = await _repo.GetUserByIdAsync(dto.Id);
 
         if (existingUser == null)
-            throw new Exception("User not found");
+            throw new KeyNotFoundException("User not found");
 
         var oldEmail = existingUser.Email;
+        _mapper.Map(dto , existingUser);
 
-        var updatedUser = await _repo.UpdateUserAsync(user);
+        var updatedUser = await _repo.UpdateUserAsync(existingUser);
 
         ClearUserCache();
 
@@ -118,7 +127,7 @@ public class UserService : IUserService
             _emailQueue.Enqueue(updatedUser.Email);
         }
 
-        return updatedUser;
+        return _mapper.Map<UserDto>(updatedUser);
     }
     public async Task DeleteUser(int id)
     {

@@ -1,7 +1,11 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
 using Practice.Data;
+using Practice.DTO;
+using Practice.Mappings;
 using Practice.Repositories;
 using Practice.Services;
 using Practice.Services.Background;
@@ -19,6 +23,18 @@ builder.Services.AddScoped<IUserRepository , UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSingleton<IEmailQueue, EmailQueue>();
 builder.Services.AddHostedService<EmailBackgroundService>();
+builder.Services.AddAutoMapper(typeof(MappingProfile));
+
+builder.Services.AddApiVersioning(options =>
+{
+    options.AssumeDefaultVersionWhenUnspecified = true;
+
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+
+    options.ReportApiVersions = true;
+
+    options.ApiVersionReader = new UrlSegmentApiVersionReader();
+});
 
 //cache
 builder.Services.AddMemoryCache();
