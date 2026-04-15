@@ -10,6 +10,7 @@ namespace Practice.Services
         Task CreateUserAsync(CreateUserDto dto);
         Task<UserDto> UpdateUserAsync(UpdateUserDto dto);
         Task DeleteUser(int id);
+        Task<string> UploadFileAsync(IFormFile file);
 
     }
 }

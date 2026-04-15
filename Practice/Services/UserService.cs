@@ -140,5 +140,21 @@ public class UserService : IUserService
 
         _logger.LogInformation($"User Deleted with Id: {id}");
     }
+    public async Task<string> UploadFileAsync(IFormFile file)
+    {
+        var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads");
+
+        if (!Directory.Exists(folder))
+            Directory.CreateDirectory(folder);
+
+        var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+
+        var path = Path.Combine(folder, fileName);
+
+        using var stream = new FileStream(path, FileMode.Create);
+        await file.CopyToAsync(stream);
+
+        return fileName;
+    }
 
 }

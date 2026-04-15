@@ -64,5 +64,20 @@ namespace Practice.Controllers
             return Ok("User deleted successfully");
         }
 
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadFile(IFormFile file)
+        {
+            var fileName = await _userService.UploadFileAsync(file);
+
+            var url = $"{Request.Scheme}://{Request.Host}/uploads/{fileName}";
+
+            return Ok(new
+            {
+                FileName = fileName,
+                Url = url,
+                Size = file.Length
+            });
+        }
+
     }
 }   
