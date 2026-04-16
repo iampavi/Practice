@@ -22,6 +22,7 @@ namespace Practice.Middleware
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred");
+                _logger.LogError(ex, "Unhandled exception occurred");
                 await HandleException(context, ex);
             }
         }

@@ -25,6 +25,8 @@ public class UserService : IUserService
 
     public async Task<(List<UserDto>, int)> GetUsersAsync(UserQuery query)
     {
+        _logger.LogInformation("Fetching users with Page: {Page}, Size: {Size}",
+    query.PageNumber, query.PageSize);
         var cacheKey = $"users_{query.PageNumber}_{query.PageSize}_{query.Search}";
 
         if (_cache.TryGetValue(cacheKey, out (List<UserDto>, int) cachedData))
@@ -64,18 +66,22 @@ public class UserService : IUserService
 
     public async Task CreateUserAsync(CreateUserDto dto)
     {
+        _logger.LogInformation("Creating user with email: {Email}", dto.Email);
         var user = _mapper.Map<User>(dto);
 
         await _repo.CreateUserAsync(user);
 
         ClearUserCache();
 
-        _logger.LogInformation($"User created with email: {user.Email}");
+        _logger.LogInformation("User created with email: {Email}",user.Email);
 
-        
-        _emailQueue.Enqueue(user.Email);
 
-        _logger.LogInformation($"Email queued for user: {user.Email}");
+        if (!string.IsNullOrEmpty(user.Email))
+        {
+            _emailQueue.Enqueue(user.Email);
+        }
+
+        _logger.LogInformation("Email queued for user: {Email}",user.Email);
     }
 
     private void ClearUserCache()
@@ -92,6 +98,7 @@ public class UserService : IUserService
 
     public async Task<UserDto> UpdateUserAsync(UpdateUserDto dto)
     {
+        _logger.LogInformation("Updating user with Id: {Id}", dto.Id);
         if (dto.Id <= 0)
             throw new Exception("Invalid user id");
 
@@ -111,20 +118,23 @@ public class UserService : IUserService
         _logger.LogInformation(
             "User updated. Id: {Id}, Email: {Email}",
             updatedUser.Id,
-            updatedUser.Email
+            updatedUser?.Email
         );
 
         // CHECK EMAIL CHANGE
-        if (oldEmail != updatedUser.Email)
+        if (oldEmail != updatedUser?.Email)
         {
             _logger.LogInformation(
                 "Email changed from {OldEmail} to {NewEmail}",
                 oldEmail,
-                updatedUser.Email
+                updatedUser?.Email
             );
 
             //  Trigger background job
-            _emailQueue.Enqueue(updatedUser.Email);
+            if (!string.IsNullOrEmpty(updatedUser?.Email))
+            {
+                _emailQueue.Enqueue(updatedUser.Email);
+            }
         }
 
         return _mapper.Map<UserDto>(updatedUser);

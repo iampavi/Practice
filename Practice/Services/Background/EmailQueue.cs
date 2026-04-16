@@ -13,6 +13,6 @@ public class EmailQueue : IEmailQueue
 
     public bool TryDequeue(out string email)
     {
-        return _queue.TryDequeue(out email);
+        return _queue.TryDequeue(out email! );
     }
 }

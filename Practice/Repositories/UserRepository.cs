@@ -8,10 +8,12 @@ namespace Practice.Repositories
     public class UserRepository : IUserRepository
     {
         private readonly AppDbContext _appDbContext;
+        private readonly ILogger<UserRepository> _logger;
 
-        public UserRepository(AppDbContext appDbContext)
+        public UserRepository(AppDbContext appDbContext, ILogger<UserRepository> logger)
         {
             _appDbContext = appDbContext;
+            _logger = logger;
         }
 
         public async Task<(List<User>, int)> GetUsersAsync(UserQuery query)
@@ -21,7 +23,7 @@ namespace Practice.Repositories
             // Search
             if (!string.IsNullOrEmpty(query.Search))
             {
-                users = users.Where(x => x.Name.Contains(query.Search));
+                users = users.Where(x => x.Name !=null && x.Name.Contains(query.Search));
             }
 
             // Total count
@@ -38,9 +40,17 @@ namespace Practice.Repositories
 
         public async Task<User?> GetUserByIdAsync(int id)
         {
-            return await _appDbContext.Users
-             .AsNoTracking()
-             .FirstOrDefaultAsync(x => x.Id == id);
+            try
+            {
+                return await _appDbContext.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Id == id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching user with Id: {Id}", id);
+                throw;
+            }
 
         }
 
