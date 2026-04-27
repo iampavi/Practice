@@ -29,8 +29,29 @@ namespace Practice.Repositories
             // Total count
             var totalCount = await users.CountAsync();
 
+            // Sorting
+            var sortBy = query.SortBy?.Trim().ToLower();
+            var sortOrder = query.SortOrder?.Trim().ToLower();
+
+            users = sortBy switch
+            {
+                "id" => sortOrder == "desc"
+                    ? users.OrderByDescending(x => x.Id)
+                    : users.OrderBy(x => x.Id),
+
+                "name" => sortOrder == "desc"
+                    ? users.OrderByDescending(x => x.Name)
+                    : users.OrderBy(x => x.Name),
+
+                "email" => sortOrder == "desc"
+                    ? users.OrderByDescending(x => x.Email)
+                    : users.OrderBy(x => x.Email),
+
+                _ => users.OrderBy(x => x.Id)
+            };
+
             // Pagination
-            var data = await users.OrderBy(x => x.Id)
+            var data = await users
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize)
                 .ToListAsync();

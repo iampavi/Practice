@@ -36,7 +36,11 @@ builder.Services.AddApiVersioning(options =>
 });
 
 //cache
-builder.Services.AddMemoryCache();
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = "localhost:6379";
+    options.InstanceName = "PracticeApp_";
+});
 
 
 builder.Services.AddControllers();
@@ -58,7 +62,14 @@ var app = builder.Build();
 
 //Middleware
 app.UseMiddleware<Practice.Middleware.ExceptionMiddleware>();
-app.UseSerilogRequestLogging();
+app.UseSerilogRequestLogging(options =>
+{
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        diagnosticContext.Set("UserAgent", httpContext.Request.Headers["User-Agent"]);
+        diagnosticContext.Set("ClientIP", httpContext.Connection.RemoteIpAddress?.ToString());
+    };
+});
 
 
 

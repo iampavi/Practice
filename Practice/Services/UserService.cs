@@ -5,48 +5,72 @@ using Practice.Models;
 using Practice.Repositories;
 using Practice.Services;
 using Practice.Services.Background;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
 public class UserService : IUserService
 {
     private readonly IUserRepository _repo;
     private readonly ILogger<IUserService> _logger;
     private readonly IEmailQueue _emailQueue;
-    private readonly IMemoryCache _cache;
+    private readonly IDistributedCache _cache;
     private static readonly List<string> _cacheKeys = new();
     private readonly IMapper _mapper;
-    public UserService(IUserRepository repo, ILogger<IUserService> logger ,IEmailQueue emailQueue ,IMemoryCache memoryCache,IMapper mapper)
+    public UserService(IUserRepository repo, ILogger<IUserService> logger ,IEmailQueue emailQueue, IDistributedCache cache, IMapper mapper)
     {
         _repo = repo;
         _logger = logger;
         _emailQueue = emailQueue;
-        _cache = memoryCache;
+        _cache = cache;
         _mapper = mapper;
     }
 
     public async Task<(List<UserDto>, int)> GetUsersAsync(UserQuery query)
     {
-        _logger.LogInformation("Fetching users with Page: {Page}, Size: {Size}",
-    query.PageNumber, query.PageSize);
-        var cacheKey = $"users_{query.PageNumber}_{query.PageSize}_{query.Search}";
+        _logger.LogInformation(
+            "Fetching users with Page: {Page}, Size: {Size}",
+            query.PageNumber, query.PageSize
+        );
 
-        if (_cache.TryGetValue(cacheKey, out (List<UserDto>, int) cachedData))
+        var cacheKey = $"users_{query.PageNumber}_{query.PageSize}_{query.Search}_{query.SortBy}_{query.SortOrder}";
+
+        // 🔹 GET from Redis
+        var cachedData = await _cache.GetStringAsync(cacheKey);
+
+        if (!string.IsNullOrEmpty(cachedData))
         {
-            _logger.LogInformation("Returning data from CACHE");
-            return cachedData;
+            _logger.LogInformation("Returning data from REDIS CACHE");
+
+            var cachedResult = JsonSerializer.Deserialize<(List<UserDto>, int)>(cachedData);
+
+            if (cachedResult != default)
+            {
+                return cachedResult;
+            }
+
+            return (new List<UserDto>(), 0);
         }
 
+        // 🔹 DB call
         var result = await _repo.GetUsersAsync(query);
 
         var usersDto = _mapper.Map<List<UserDto>>(result.Item1);
 
         var mappedResult = (usersDto, result.Item2);
 
-        _cache.Set(cacheKey, mappedResult, TimeSpan.FromMinutes(5));
+        // 🔹 Store in Redis
+        var options = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+        };
 
-        // 🔥 Track key
-        _cacheKeys.Add(cacheKey);
+        await _cache.SetStringAsync(
+            cacheKey,
+            JsonSerializer.Serialize(mappedResult),
+            options
+        );
 
-        _logger.LogInformation("Data stored in CACHE");
+        _logger.LogInformation("Data stored in REDIS CACHE");
 
         return mappedResult;
     }
@@ -68,6 +92,8 @@ public class UserService : IUserService
     {
         _logger.LogInformation("Creating user with email: {Email}", dto.Email);
         var user = _mapper.Map<User>(dto);
+
+        user.Password = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
         await _repo.CreateUserAsync(user);
 
@@ -109,7 +135,13 @@ public class UserService : IUserService
             throw new KeyNotFoundException("User not found");
 
         var oldEmail = existingUser.Email;
+
         _mapper.Map(dto , existingUser);
+
+        if (!string.IsNullOrWhiteSpace(dto.Password))
+        {
+            existingUser.Password = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+        }
 
         var updatedUser = await _repo.UpdateUserAsync(existingUser);
 
